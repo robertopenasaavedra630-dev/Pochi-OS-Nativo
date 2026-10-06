@@ -35,7 +35,6 @@ jobs:
 
           if [ -z "$ZIP" ]; then
             echo "ERROR: No se encontró el ZIP BUILD_OK."
-            echo "Archivos disponibles:"
             ls -la
             exit 1
           fi
@@ -62,6 +61,18 @@ jobs:
           echo "$PROYECTO"
 
           echo "$PROYECTO" > proyecto_ruta.txt
+
+      - name: Corregir repositorios de Gradle
+        run: |
+          PROYECTO=$(cat proyecto_ruta.txt)
+
+          if [ -f "$PROYECTO/settings.gradle" ]; then
+            sed -i 's/PREFER_SETTINGS/PREFER_PROJECT/g' "$PROYECTO/settings.gradle"
+            sed -i 's/FAIL_ON_PROJECT_REPOS/PREFER_PROJECT/g' "$PROYECTO/settings.gradle"
+          fi
+
+          echo "settings.gradle corregido:"
+          cat "$PROYECTO/settings.gradle"
 
       - name: Preparar Gradle
         uses: gradle/actions/setup-gradle@v4
