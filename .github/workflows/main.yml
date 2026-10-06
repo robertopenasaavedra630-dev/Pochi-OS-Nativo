@@ -32,8 +32,7 @@ jobs:
       - name: Descomprimir Pochi OS
         run: |
           mkdir proyecto
-          unzip -o Pochi_OS_Android_v1_Completo_CORREGIDO.zip -d proyecto
-          echo "Contenido del proyecto:"
+          unzip -o Pochi_OS_Android_v1_Completo_BUILD_OK.zip -d proyecto
           find proyecto -maxdepth 4 -type f
 
       - name: Preparar Gradle
@@ -41,22 +40,15 @@ jobs:
         with:
           gradle-version: 8.2.1
 
-      - name: Encontrar proyecto Android
-        run: |
-          echo "Buscando build.gradle:"
-          find proyecto -name build.gradle -type f
-
       - name: Construir APK
         run: |
           PROYECTO=$(dirname "$(find proyecto -name settings.gradle -type f | head -1)")
-          echo "Proyecto encontrado en: $PROYECTO"
+          echo "Proyecto: $PROYECTO"
           cd "$PROYECTO"
           gradle assembleDebug --no-daemon
 
       - name: Buscar APK
-        run: |
-          echo "APK generado:"
-          find proyecto -name "*.apk" -type f
+        run: find proyecto -name "*.apk" -type f
 
       - name: Guardar APK
         uses: actions/upload-artifact@v4
