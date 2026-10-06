@@ -34,7 +34,6 @@ jobs:
         run: |
           unzip -o Pochi_OS_Android_v1_Completo.zip
           ls -la
-          find Pochi_OS_Android_v1_Completo -maxdepth 4 -type f
 
       - name: Preparar Gradle
         uses: gradle/actions/setup-gradle@v4
