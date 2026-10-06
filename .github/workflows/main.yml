@@ -29,11 +29,41 @@ jobs:
           sdkmanager "platforms;android-34"
           sdkmanager "build-tools;34.0.0"
 
-      - name: Descomprimir Pochi OS
+      - name: Encontrar y descomprimir Pochi OS
         run: |
-          mkdir proyecto
-          unzip -o Pochi_OS_Android_v1_Completo_BUILD_OK.zip -d proyecto
-          find proyecto -maxdepth 4 -type f
+          ZIP=$(find . -maxdepth 1 -type f -name 'Pochi_OS_Android*.zip' | head -1)
+
+          if [ -z "$ZIP" ]; then
+            echo "ERROR: No se encontró el ZIP de Pochi OS."
+            echo "Archivos disponibles:"
+            ls -la
+            exit 1
+          fi
+
+          echo "ZIP encontrado: $ZIP"
+
+          mkdir -p proyecto
+          unzip -o "$ZIP" -d proyecto
+
+          echo "Contenido descomprimido:"
+          find proyecto -maxdepth 5 -type f
+
+      - name: Localizar proyecto Android
+        run: |
+          SETTINGS=$(find proyecto -name settings.gradle -type f | head -1)
+
+          if [ -z "$SETTINGS" ]; then
+            echo "ERROR: No se encontró settings.gradle."
+            find proyecto -maxdepth 6 -type f
+            exit 1
+          fi
+
+          PROYECTO=$(dirname "$SETTINGS")
+
+          echo "Proyecto Android encontrado en:"
+          echo "$PROYECTO"
+
+          echo "$PROYECTO" > proyecto_ruta.txt
 
       - name: Preparar Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -42,16 +72,23 @@ jobs:
 
       - name: Construir APK
         run: |
-          PROYECTO=$(dirname "$(find proyecto -name settings.gradle -type f | head -1)")
-          echo "Proyecto: $PROYECTO"
+          PROYECTO=$(cat proyecto_ruta.txt)
+
+          echo "Construyendo desde:"
+          echo "$PROYECTO"
+
           cd "$PROYECTO"
+
           gradle assembleDebug --no-daemon
 
-      - name: Buscar APK
-        run: find proyecto -name "*.apk" -type f
+      - name: Buscar APK generado
+        run: |
+          echo "Buscando APK..."
+          find proyecto -type f -name "*.apk" -print
 
       - name: Guardar APK
         uses: actions/upload-artifact@v4
         with:
           name: Pochi-OS-APK
           path: proyecto/**/*.apk
+          if-no-files-found: error
