@@ -8,6 +8,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Descargar proyecto
         uses: actions/checkout@v4
 
@@ -29,20 +30,23 @@ jobs:
           sdkmanager "platforms;android-34"
           sdkmanager "build-tools;34.0.0"
 
-      - name: Buscar ZIP correcto de Pochi OS
+      - name: Buscar Pochi OS v2
         run: |
-          ZIP=$(find . -maxdepth 1 -type f -name 'Pochi_OS_Android_v1_Completo_BUILD_OK*.zip' | head -1)
+          ZIP=$(find . -maxdepth 1 -type f -name 'Pochi_OS_Android_v2_BASE_OK.zip' | head -1)
 
           if [ -z "$ZIP" ]; then
-            echo "ERROR: No se encontró el ZIP BUILD_OK."
+            echo "ERROR: No se encontró Pochi_OS_Android_v2_BASE_OK.zip"
+            echo "Archivos encontrados:"
             ls -la
             exit 1
           fi
 
-          echo "USANDO ESTE ZIP:"
+          echo "ZIP ENCONTRADO:"
           echo "$ZIP"
 
+          rm -rf proyecto
           mkdir -p proyecto
+
           unzip -o "$ZIP" -d proyecto
 
       - name: Encontrar proyecto Android
@@ -51,7 +55,7 @@ jobs:
 
           if [ -z "$SETTINGS" ]; then
             echo "ERROR: No se encontró settings.gradle"
-            find proyecto -maxdepth 6 -type f
+            find proyecto -maxdepth 8 -type f
             exit 1
           fi
 
@@ -62,18 +66,6 @@ jobs:
 
           echo "$PROYECTO" > proyecto_ruta.txt
 
-      - name: Corregir repositorios de Gradle
-        run: |
-          PROYECTO=$(cat proyecto_ruta.txt)
-
-          if [ -f "$PROYECTO/settings.gradle" ]; then
-            sed -i 's/PREFER_SETTINGS/PREFER_PROJECT/g' "$PROYECTO/settings.gradle"
-            sed -i 's/FAIL_ON_PROJECT_REPOS/PREFER_PROJECT/g' "$PROYECTO/settings.gradle"
-          fi
-
-          echo "settings.gradle corregido:"
-          cat "$PROYECTO/settings.gradle"
-
       - name: Preparar Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
@@ -82,17 +74,35 @@ jobs:
       - name: Construir APK
         run: |
           PROYECTO=$(cat proyecto_ruta.txt)
-          cd "$PROYECTO"
-          gradle assembleDebug --no-daemon
 
-      - name: Buscar APK
+          echo "Construyendo desde:"
+          echo "$PROYECTO"
+
+          cd "$PROYECTO"
+
+          gradle assembleDebug --no-daemon --stacktrace
+
+      - name: Verificar APK
         run: |
           echo "APK GENERADO:"
+
           find proyecto -type f -name "*.apk" -print
+
+          APK=$(find proyecto -type f -name "*.apk" | head -1)
+
+          if [ -z "$APK" ]; then
+            echo "ERROR: No se generó ningún APK"
+            exit 1
+          fi
+
+          echo "APK ENCONTRADO:"
+          echo "$APK"
+
+          ls -lh "$APK"
 
       - name: Guardar APK
         uses: actions/upload-artifact@v4
         with:
-          name: Pochi-OS-APK
+          name: Pochi-OS-APK-v2
           path: proyecto/**/*.apk
           if-no-files-found: error
