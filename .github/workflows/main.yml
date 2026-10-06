@@ -29,38 +29,36 @@ jobs:
           sdkmanager "platforms;android-34"
           sdkmanager "build-tools;34.0.0"
 
-      - name: Encontrar y descomprimir Pochi OS
+      - name: Buscar ZIP correcto de Pochi OS
         run: |
-          ZIP=$(find . -maxdepth 1 -type f -name 'Pochi_OS_Android*.zip' | head -1)
+          ZIP=$(find . -maxdepth 1 -type f -name 'Pochi_OS_Android_v1_Completo_BUILD_OK*.zip' | head -1)
 
           if [ -z "$ZIP" ]; then
-            echo "ERROR: No se encontró el ZIP de Pochi OS."
+            echo "ERROR: No se encontró el ZIP BUILD_OK."
             echo "Archivos disponibles:"
             ls -la
             exit 1
           fi
 
-          echo "ZIP encontrado: $ZIP"
+          echo "USANDO ESTE ZIP:"
+          echo "$ZIP"
 
           mkdir -p proyecto
           unzip -o "$ZIP" -d proyecto
 
-          echo "Contenido descomprimido:"
-          find proyecto -maxdepth 5 -type f
-
-      - name: Localizar proyecto Android
+      - name: Encontrar proyecto Android
         run: |
           SETTINGS=$(find proyecto -name settings.gradle -type f | head -1)
 
           if [ -z "$SETTINGS" ]; then
-            echo "ERROR: No se encontró settings.gradle."
+            echo "ERROR: No se encontró settings.gradle"
             find proyecto -maxdepth 6 -type f
             exit 1
           fi
 
           PROYECTO=$(dirname "$SETTINGS")
 
-          echo "Proyecto Android encontrado en:"
+          echo "PROYECTO ANDROID:"
           echo "$PROYECTO"
 
           echo "$PROYECTO" > proyecto_ruta.txt
@@ -73,17 +71,12 @@ jobs:
       - name: Construir APK
         run: |
           PROYECTO=$(cat proyecto_ruta.txt)
-
-          echo "Construyendo desde:"
-          echo "$PROYECTO"
-
           cd "$PROYECTO"
-
           gradle assembleDebug --no-daemon
 
-      - name: Buscar APK generado
+      - name: Buscar APK
         run: |
-          echo "Buscando APK..."
+          echo "APK GENERADO:"
           find proyecto -type f -name "*.apk" -print
 
       - name: Guardar APK
